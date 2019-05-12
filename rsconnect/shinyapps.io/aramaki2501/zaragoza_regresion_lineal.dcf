@@ -5,8 +5,8 @@ account: aramaki2501
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 810269
-bundleId: 1969574
+bundleId: 1974341
 url: https://aramaki2501.shinyapps.io/zaragoza_regresion_lineal/
-when: 1553733436.11371
+when: 1553889410.58849
 asMultiple: FALSE
 asStatic: FALSE

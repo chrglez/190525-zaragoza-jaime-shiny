@@ -1,161 +1,1067 @@
-#
-# This is a Shiny web application about linear regression.It returns
-# several plots based on the user's input.
-#
-
-library(shiny)
-library(plotly)
-
-# Define UI for application that draws four plots.
-ui <- fluidPage(
 
 
-   # Application title
-   titlePanel("Regresión lineal simple"),
+shinyApp(
 
-   # Sidebar with a two text inputs. In the server section we transform these
-   # texts in a dataframe
-   sidebarLayout(
-      sidebarPanel(
-        textInput("vx",
-                  "Valores de x:",
-                  value = paste(1:10, collapse = ', ')),
-        textInput("vy",
-                  "Valores de y:",
-                  value = paste((1:10)*2 + round(runif(10,-2,7),2), collapse = ', '))
+  ui = tagList(
+    titlePanel(
+      fluidRow(
+        column(9, 'Panel Interactivo de aNálisis Econométrico (PINE)'),
+        column(3, img(height = 55, width = 200, src = "ulpgc.png"))
+        ), 'PINE'),
+
+    navbarPage(
+      theme = shinythemes::shinytheme("cosmo"),  # <--- To use a theme, uncomment this
+      "PINE",
+      tabPanel('Introducción','Motivación, desarrollo y autoría')
       ),
+      tabPanel("Dataset",
+               sidebarPanel(
+                 selectInput('dataset',label = h3("Seleccionar dataset"),
+                             choices = c('wage1', 'jtrain'))),
+               mainPanel(
+                 tabsetPanel(
+                   tabPanel("Tabla",
+                            DT::dataTableOutput("table")
+                   ),
+                   tabPanel("Análisis descriptivo",
+                            h4('Número de filas y columnas'),
+                            verbatimTextOutput('nfc'),
+                            h4('Variables'),
+                            verbatimTextOutput('var_names'),
+                            h4('Metadata'),
+                            verbatimTextOutput('str_df'),
+                            h4('Descriptivos'),
+                            verbatimTextOutput('summary_df')
+                            ),
+                   tabPanel("Primeros y últimos datos",
+                            h4('Primeros 5 datos'),
+                            tableOutput('head5_df'),
+                            h4('Últimos 5 datos'),
+                            tableOutput('tail5_df')
+                            )
+                   )
+                 )
+      ),
+      # Navbar univariante
+      tabPanel("Univariante",
+          tabsetPanel(
+            tabPanel("Categóricas",
+                    sidebarPanel(
+                      uiOutput('categorica_input')
+                    ),
+                    mainPanel(
+                      fluidRow(
+                        column(7,
+                               plotOutput('cat_plot')),
+                        column(5,
+                               h4('Tabla cruzada'),
+                               verbatimTextOutput('tabla_cruzada_cat'),
+                               selectInput('int_conf_cat','Intervalo de confianza',choices = c(0.99,0.95,0.90)),
+                               selectInput('tipo_cont_cat','Tipo de contraste',
+                                           choices = c('dos colas' = 'two.sided', 'mayor' = 'greater', 'menor' = 'less')),
+                               h4('Test de proporciones'),
+                               verbatimTextOutput('test_prop_cat')
+                        )
 
-      # We create 4 tabs.
-      mainPanel(
-        tabsetPanel(
-          tabPanel('Regresión',plotlyOutput('regplot'),
-                   hr(),
 
-                   uiOutput('formula')),
-          tabPanel('Regresión Residuos',plotlyOutput('errplot')),
+                      )
 
-          tabPanel('Boxplot Residuos',plotlyOutput('errboxplot')),
+                              )
+                    ),
+            tabPanel("Descriptivos",
+                     sidebarPanel(
+                       uiOutput('medida_input')
+                     ),
+                     mainPanel(
+                       fluidRow(
+                         column(6,
+                                h4('Cuartiles, media, máximo y mínimo'),
+                                verbatimTextOutput('medidas_3m'),
+                                column(4, h4('Desviación típica'),
+                                       verbatimTextOutput('medidas_sd')),
+                                column(4, h4('Varianza'),
+                                       verbatimTextOutput('medidas_var')),
+                                column(4, h4('Rango Intercuartíl'),
+                                       verbatimTextOutput('medidas_ri'))
+                         ),
+                         column(6,
+                                h4('Moda'),
+                                verbatimTextOutput('medidas_moda'),
+                                column(4, h4('Asimetría'),
+                                       verbatimTextOutput('medidas_asimetría')),
+                                column(4, h4('Curtosis'),
+                                       verbatimTextOutput('medidas_cur')),
+                                column(4, h4('Rango medio'),
+                                       verbatimTextOutput('medidas_rm'))
 
-          tabPanel('QQ-Plot Residuos',plotlyOutput('errqqplot'))
+                         )
 
 
-        )
-      )
-   )
-)
+                       )
 
-# Define server logic required to draw the 4 tabs
-server <- function(input, output) {
 
-  library(ggplot2)
-  library(stringr)
-  library(dplyr)
-  library(purrr)
-  library(DT)
 
-  conversor <- function(x){
-    x <- x %>% str_remove_all(" ")
-    if (suppressWarnings(!is.na(as.numeric(x))))
-      x %>% as.numeric()
-    else {
-      str.temp <- x %>% str_split("-", simplify = T)
-      str.temp[1]:str.temp[2]
-    }
-  }
 
-  reactive({
-    input$vx %>%
-      str_split(",", simplify = TRUE) %>%
-      map(conversor) %>%
-      unlist()
-  }) -> x
 
-  reactive({
-    input$vy %>%
-      str_split(",", simplify = TRUE) %>%
-      map(conversor) %>%
-      unlist()
-  }) -> y
 
-  data <- reactive({data.frame(x = x(), y = y())})
-  lmfit    <- reactive({lm(y ~ x, data = data())})
+                     )),
+            tabPanel("T-test",value = 'ttest',
+                     sidebarPanel(
+                       uiOutput('ttest_input')
+                       ),
+                     mainPanel(
+                       fluidRow(
+                         column(6,
+                                h4('Test de la t de Student para una muestra'),
+                                numericInput('media_1m_ttest','H0: Media = ',0),
+                                verbatimTextOutput('o_1m_ttest'),
+                                h4('Prueba Z para una muestra'),
+                                numericInput('media_1m_ztest','H0: Media = ',0),
+                                numericInput('sd_1m_ztest','Desviación típica ',1),
+                                verbatimTextOutput('o_1m_ztest')
+                                ),
+                         column(6,
+                                h4('Potencia del test de la t de Student'),
+                                numericInput('diff_media_ttest','Diferencia en media',0),
+                                selectInput('tipo_cont_ttest','Tipo de contraste',
+                                            choices = c('dos colas' = 'two.sided', 'una cola' = 'one.side')),
+                                verbatimTextOutput('o_power_ttest'),
+                                h4('Potencia de la prueba Z'),
+                                numericInput('media_power_ztest','H0: Diferencia de la media = ',0),
+                                numericInput('sd_power_ztest','Desviación típica ',1),
+                                verbatimTextOutput('o_power_ztest')
+                                )
+                       )
+                     )
+                     ),
 
-   output$regplot <- renderPlotly({
-      # generate a scatter plot based on input$y vs input$x from ui.R
-     # and the linear regression line.
-    print(
-#      ggplotly(
-#    ggplot(data(), aes(x = x, y = y)) +
-#        geom_point(size = 3, shape = 1) +
-#        stat_smooth(method = "lm", col = "blue", se = FALSE)
-#      )
-      data() %>%
-        plot_ly(name = 'Valores', y = ~y, x = ~x, mode = 'marker', # Hover text:
-                text = ~paste("Residuo: ",round(lmfit()$residuals,4))) %>%
-        add_markers(y = ~y) %>%
-        add_trace(x = ~x, y = lmfit()$fitted.values, mode = 'lines', name = 'Ajuste')
+
+            tabPanel("Wilcoxon",
+                     sidebarPanel(
+                       uiOutput('wilcoxon_input')
+                     ),
+                     mainPanel(
+                       h4('Prueba de los rangos con signo de Wilcoxon'),
+                       numericInput('dif_median_wil','Diferencia en mediana',0),
+                       selectInput('tipo_cont_wil','Tipo de contraste',
+                                   choices = c('dos colas' = 'two.sided', 'mayor' = 'greater', 'menor' = 'less')),
+                       selectInput('int_conf_wil','Intervalo de confianza',
+                                   choices = c('0.99' = 0.99, '0.95' = 0.95, '0.90' = 0.90)),
+                       verbatimTextOutput('o_wil_test')
+                     )
+                     ),
+            tabPanel("Box y Violín Plots",value = 'bvp',
+                     sidebarPanel(
+                       uiOutput('violin_input')
+                     ),
+                     mainPanel(
+                       column(6,
+                              plotOutput('o_boxplot_violin')
+                              ),
+                       column(6,
+                              plotOutput('o_violin_violin')
+                              )
+                       )),
+            tabPanel("Distribución fija",value = 'fix_dist',
+                     sidebarPanel(
+                       uiOutput('dist_input')
+                     ),
+                     mainPanel(
+                       column(6,
+                              h4('Histograma'),
+                              plotOutput('o_hist_dist')),
+                       column(6,
+                              h4('Gráfico QQ'),
+                              plotOutput('o_qqplot_dist'))
+
+                     )),
+
+            tabPanel("Gráfico secuencial y de retardos",value = 'lsp',
+                     sidebarPanel(
+                       uiOutput('lsp_input')
+                     ),
+                     mainPanel(
+                       column(6,
+                              h4('Gráfico de retardos'),
+                              plotOutput('o_retardos_lsp')),
+                       column(6,
+                              h4('Gráfico secuencial'),
+                              plotOutput('o_secuencial_lsp'))
+
+                     )
+                     ),
+
+            tabPanel("Test de bondad del ajuste",value = 'tba',
+                     sidebarPanel(
+                       uiOutput('tba_input'),
+                       selectInput('i_curva_tba','Distribución',
+                                   choices = c('Normal' = 'normal', 'Couchy' = 'cauchy',
+                                               'Logística' = 'logistic', 'Exponencial' = 'exponential',
+                                               'Weibull' = 'weibull'))
+                     ),
+                     mainPanel(
+                       column(6,
+                              h3('Ajuste de distribuciones'),
+                              h4('Método de los momentos'),
+                              verbatimTextOutput('o_momentos_tba'),
+                              h4('Método de máxima verosimilitud'),
+                              verbatimTextOutput('o_max_ver_tba'),
+                              h3('Test de bondad del ajuste'),
+                              h4('Kolmogorov-Smirnov Test'),
+                              verbatimTextOutput('o_ks_tba')
+                              ),
+                       column(6,
+                              h4('Ajuste de la curva'),
+                              plotOutput('o_bondad_tba')
+                              # h4('Test de la Chi-Cuadrado'),
+                              # verbatimTextOutput('o_chi_tba')
+                              )
+
+
+
+
+                     )
+                     )
+        )),
+      tabPanel("Bivariante",
+               tabsetPanel(
+                 tabPanel('Numérica - Numérica', value = 'nn_biv',
+                          sidebarPanel(
+                            uiOutput('nnbiv_input1'),
+                            uiOutput('nnbiv_input2')
+                            ),
+                          mainPanel(
+                            tabsetPanel(
+                              tabPanel('Bihistograma',
+                                       plotOutput('o_bihist_bi')
+                                       ),
+                              tabPanel('Diagrama de dispersión',
+                                       column(8,
+                                              plotOutput('o_sp_bi')),
+                                       column(4,
+                                              verbatimTextOutput('o_sp_coef_bi'))
+                                       ),
+                              tabPanel('Regresión lineal',
+                                       column(4,
+                                              verbatimTextOutput('o_rl_bi')),
+                                       column(8,
+                                              plotOutput('o_rl_plot_bi'))),
+                              tabPanel('Test de igualdad de varianzas',
+                                       column(6,
+
+                                              selectInput('tipo_cont_vartst','Tipo de contraste',
+                                                          choices = c('dos colas' = 'two.sided', 'mayor' = 'greater', 'menor' = 'less'))
+                                       ),
+                                       column(6,
+
+                                              selectInput('int_conf_vartst','Intervalo de confianza',
+                                                          choices = c('0.99' = 0.99, '0.95' = 0.95, '0.90' = 0.90))
+                                       ),
+                                       h4('F Test'),
+                                       verbatimTextOutput('o_ftest_vartst')
+                                       ),
+                              tabPanel('T-test',
+                                       h4('Prueba t de Student para dos muestras'),
+                                       fluidRow(
+                                         column(4,
+
+                                                selectInput('tipo_cont_tst_bi','Tipo de contraste',
+                                                            choices = c('dos colas' = 'two.sided', 'mayor' = 'greater', 'menor' = 'less')),
+                                                checkboxInput('paired_tst_bi', '¿Muestras relacionadas?', value = FALSE)
+                                         ),
+                                         column(4,
+
+                                                selectInput('int_conf_tst_bi','Intervalo de confianza',
+                                                            choices = c('0.99' = 0.99, '0.95' = 0.95, '0.90' = 0.90)),
+                                                checkboxInput('variance_tst_bi', '¿Igualdad de varianzas?', value = FALSE)
+                                         ),
+                                         column(4,
+
+                                                numericInput('mean_dif_tst_bi','Diferencia en media',
+                                                             value = 0)
+                                         )
+
+                                       ),
+                                       hr(),
+                                       h4('Resultados'),
+                                       fluidRow(
+                                         column(6,
+                                                plotOutput('o_plot_tst_bi')
+                                         ),
+                                         column(6,
+                                                verbatimTextOutput('o_tst_bi')
+                                         )
+                                         # Se podría incluir también densidad de la t y ver si la diferencia en medias
+                                         # cae fuera del nivel de significación
+
+                                       )
+
+                                       ),
+
+                              tabPanel('Prueba de la suma de rangos de Wilcoxon',
+                                       h4('Prueba Mann-Whitney-Wilcoxon'),
+                                       fluidRow(
+                                         column(4,
+
+                                                selectInput('tipo_cont_wil_bi','Tipo de contraste',
+                                                            choices = c('dos colas' = 'two.sided', 'mayor' = 'greater', 'menor' = 'less')),
+                                                checkboxInput('paired_wil_bi', '¿Muestras relacionadas?', value = FALSE)
+                                         ),
+                                         column(4,
+
+                                                selectInput('int_conf_wil_bi','Intervalo de confianza',
+                                                            choices = c('0.99' = 0.99, '0.95' = 0.95, '0.90' = 0.90))
+
+                                         ),
+                                         column(4,
+
+                                                numericInput('mean_dif_wil_bi','Diferencia en mediana',
+                                                             value = 0)
+                                         )
+                                       ),
+                                       hr(),
+                                       h4('Resultados'),
+                                       fluidRow(
+                                         column(6,
+                                                plotOutput('o_plot_wil_bi')
+                                         ),
+                                         column(6,
+                                                verbatimTextOutput('o_wil_bi')
+                                         )
+                                         )
+                                       )
+
+
+                              )
+                            )
+                          ),
+                   tabPanel('Categórica - Numérica',
+                            sidebarPanel(
+                              uiOutput('cn_input1'),
+                              uiOutput('cn_input2')
+                            ),
+                            mainPanel(
+                              tabsetPanel(
+                                tabPanel('Boxplot',
+                                         plotOutput('o_boxplot_cn')
+                                         ),
+                                tabPanel('Gráfico de densidad',
+                                         plotOutput('o_density_cn')
+                                         ),
+                                tabPanel('Regresión',
+                                         fluidRow(
+                                           column(6, verbatimTextOutput('o_rl_cn')
+                                                  ),
+                                           column(6, plotOutput('o_rl_plot_cn')
+                                                  )
+                                           )
+                                         ),
+
+                                tabPanel('ANOVA',
+                                         h4('Anova (paramétrico)'),
+                                         verbatimTextOutput('o_anova_cn'),
+                                         h4('Anova (paramétrico). Tukey test.'),
+                                         verbatimTextOutput('o_anova_tukey_cn'),
+                                         h4('Krustal (no paramétrico)'),
+                                         verbatimTextOutput('o_krustal_cn')
+                                         )
+
+
+                              )
+                            )),
+                   tabPanel('Categórica - Categórica',
+                            sidebarPanel(
+                              uiOutput('cc_input1'),
+                              uiOutput('cc_input2')
+                            ),
+                            mainPanel(
+                              tabsetPanel(
+                                tabPanel('Tabulación cruzada',
+                                         br(),
+                                         h4('Tabla Cruzada'),
+                                         htmlOutput('o_tab_cruzada_bi', align = "center")
+                                         ),
+                                tabPanel('Gráfico de barra',
+                                         plotOutput('o_barplot_cc_bi')
+                                         ),
+                                tabPanel('Prueba de la Chi - Cuadrado',
+                                         h4('Prueba de la Chi Cuadrado'),
+                                         verbatimTextOutput('o_x2_cc_bi'),
+                                         h4('Esperados'),
+                                         verbatimTextOutput('o_x2_xp_cc_bi'),
+                                         h4('Residuos'),
+                                         verbatimTextOutput('o_x2_res_cc_bi'),
+                                         h4('Residuos estandarizados'),
+                                         verbatimTextOutput('o_x2_std_cc_bi')
+                                         ),
+                                tabPanel('Prueba exacta de Fisher',
+                                         h4('Prueba exacta de Fisher'),
+                                         verbatimTextOutput('o_fisher_c_bi'))
+                                )
+                              )
+                            )
+               )
+
+               ),
+      tabPanel("Multivariante",
+               tabsetPanel(
+                 tabPanel('Regresión',
+                          sidebarPanel(
+                            uiOutput('mreg_input1'),
+                            uiOutput('mreg_input2')
+                          ),
+                          mainPanel(
+                            fluidRow(
+                              column(6,
+                                     h4('Regresión lineal múltiple'),
+                                     verbatimTextOutput('o_mreg')
+                                     ),
+                              column(6,
+                                     h4('Comprobación de las hipótesis de modelo'),
+                                     plotOutput('o_mreg_hip')
+                                     )),
+                            hr(),
+                            fluidRow(
+                                column(6,
+                                       h4('Intervalo de confianza'),
+                                       verbatimTextOutput('o_mreg_int_conf')
+                                       )
+                                )
+                            )
+                          ),
+                 tabPanel('Análisis discriminante','blank'),
+                 tabPanel('ACP','blank'),
+                 tabPanel('Cluster','nlank'),
+                 tabPanel('Reg. logística','blank')
+               )
+               )
     )
-   })
+  ),
+  server = function(input, output) {
 
-   output$formula <- renderUI({
-     withMathJax(paste0('$$\\hat{y}=',round(lmfit()$coefficients[1],4),'+',
-                        round(lmfit()$coefficients[2],4),'x;\\qquad R^2=',round(summary(lmfit())$r.squared*100,2),'\\%$$'))
+    library(wooldridge)
+    library(ggplot2)
+    library(dplyr)
+    library(RColorBrewer)
+    library(BSDA)
+    library(asbio)
+    #library(ggpubr)
+    library(ggthemes)
+    library(MASS)
+    library(Hmisc)
+    library(grid)
+    library(gridExtra)
+    library(sjPlot)
 
-   })
 
-   output$errplot <- renderPlotly({
 
-     datar <- reactive({data.frame(x = x(), Residuos = lmfit()$residuals)})
-     lmerrfit    <- reactive({lm(Residuos ~ x, data = datar())})
-     #ggplot(datar(), aes(x = x, y = y)) +
-      # geom_point(size = 3) +
-      # stat_smooth(method = "lm", col = "blue", se = FALSE)
-     print(
-     datar() %>%
-       plot_ly(name = 'Residuos', y = ~Residuos, x = ~x, mode = 'marker') %>%
-       add_markers(y = ~Residuos) %>%
-       add_trace(x = ~x, y = lmerrfit()$fitted.values, mode = 'lines', name = 'Ajuste')
+    wage1 <- wage1 %>%
+      mutate(nonwhite = factor(nonwhite, labels = c('white','nonwhite')),
+             female = factor(female, labels = c('male', 'female')),
+             married = factor(married, labels = c('non married', 'married')),
+             smsa = as.factor(smsa),
+             northcen = as.factor(northcen),
+             south = as.factor(south),
+             west = as.factor(west),
+             construc = as.factor(construc),
+             ndurman = as.factor(ndurman),
+             trcommpu = as.factor(trcommpu),
+             trade = as.factor(trade),
+             services = as.factor(services),
+             profserv = as.factor(profserv),
+             profocc = as.factor(profocc),
+             clerocc = as.factor(clerocc),
+             servocc = as.factor(servocc))
 
+    datasetInput <- reactive({
+      switch(input$dataset,
+             "wage1" = wage1,
+             "jtrain" = jtrain
+             )
+    })
+
+# navbar dataset
+    # tab tabla
+    output$table <-
+      DT::renderDataTable({datasetInput()
+        }, filter = 'top', server = TRUE, rownames = FALSE,
+        options = list(autoWidth = TRUE))
+    # tab Análisis descriptivo
+
+    output$nfc <-
+      renderPrint({dim(datasetInput())})
+
+    output$var_names <-
+      renderPrint({names(datasetInput())})
+
+    output$str_df <-
+      renderPrint({str(datasetInput())})
+
+    output$summary_df <-
+      renderPrint({summary(datasetInput())})
+    # tab primeros y últimos
+
+    output$head5_df <-
+      renderTable({head( datasetInput(), n = 5 )},
+                  hover = TRUE, spacing = 'xs',
+                  digits = 4)
+
+    output$tail5_df <-
+      renderTable({tail( datasetInput(), n = 5 )},
+                                  hover = TRUE, spacing = 'xs',
+                                  digits = 4)
+
+    # navbar Univariante
+
+    output$categorica_input <- renderUI({
+      selectInput("cat_oui", "Seleccionar variable:", as.list(names(datasetInput())[sapply(datasetInput(), is.factor)]))
+      })
+
+    output$cat_plot <- renderPlot({
+      barplot(table(datasetInput()[,input$cat_oui]), xlab = input$cat_ui, ylab = 'N', main = '',
+              col = brewer.pal(length(levels(datasetInput()[,input$cat_oui])), "Set1"))
+      })
+
+    output$tabla_cruzada_cat <- renderPrint({
+      prop.table(table(datasetInput()[,input$cat_oui]))
+    })
+
+    output$test_prop_cat <- renderPrint({
+      prop.test(as.vector(table(datasetInput()[,input$cat_oui])),
+                rep(sum(table(datasetInput()[,input$cat_oui])),
+                    length(table(datasetInput()[,input$cat_oui]))),
+                alternative = input$tipo_cont_cat,
+                conf.level = as.numeric(input$int_conf_cat))
+    })
+
+# navbar univariante medida
+
+    output$medida_input <- renderUI({
+      selectInput("medida_var", "Seleccionar variable:", as.list(colnames(datasetInput())[sapply(datasetInput(), is.numeric)]))
+      })
+
+    output$medidas_3m <-
+      renderPrint({summary(datasetInput()[,input$medida_var])})
+
+    output$medidas_sd <-
+      renderPrint({sd(datasetInput()[,input$medida_var], na.rm = TRUE)})
+
+    output$medidas_var <-
+      renderPrint({var(datasetInput()[,input$medida_var], na.rm = TRUE )})
+
+    output$medidas_ri <-
+      renderPrint({IQR(datasetInput()[,input$medida_var], na.rm = TRUE )})
+
+
+    output$medidas_moda <-
+      renderPrint({
+        uniqv <- unique(datasetInput()[,input$medida_var])
+        uniqv[which.max(tabulate(match(datasetInput()[,input$medida_var], uniqv)))]
+      })
+
+    output$medidas_asimetría <-
+      renderPrint({
+        m3 = mean((datasetInput()[,input$medida_var] - mean(datasetInput()[,input$medida_var]))^3)
+        skew = m3/(sd(datasetInput()[,input$medida_var])^3)
+        skew
+      })
+
+    output$medidas_cur <-
+      renderPrint({
+        m4 = mean((datasetInput()[,input$medida_var] - mean(datasetInput()[,input$medida_var]))^4)
+        kurt = m4/(sd(datasetInput()[,input$medida_var])^4) - 3
+        kurt
+      })
+
+    output$medidas_rm <-
+      renderPrint({#(
+        max(datasetInput()[,input$medida_var], na.rm = TRUE) #+
+        #  min(datasetInput()[,input$medida_var], na.rm = TRUE ))/2
+        })
+
+    #Univariante T-test
+
+  output$ttest_input <- renderUI({
+      selectInput("ttest_var", "Seleccionar variable:", as.list(colnames(datasetInput())[sapply(datasetInput(), is.numeric)]))
+    })
+
+    output$o_1m_ttest <- renderPrint({
+      t.test(datasetInput()[,input$ttest_var], mu = input$media_1m_ttest)
+      })
+
+    output$o_1m_ztest <- renderPrint({
+      BSDA::z.test(datasetInput()[,input$ttest_var], sigma.x = input$sd_1m_ztest, mu = input$media_1m_ztest)
+      })
+
+    output$o_power_ttest <- renderPrint({
+      power.t.test(n = length(datasetInput()[,input$ttest_var]), delta = input$diff_media_ttest, alternative = input$tipo_cont_ttest)
+      # La alternativa usada por DIDAT es pwr::pwr.t.test
+    })
+
+    output$o_power_ztest <- renderPrint({
+      asbio::power.z.test(sigma = input$sd_power_ztest,n = length(datasetInput()[,input$ttest_var]), test = 'one.tail', effect = input$media_power_ztest)
+    })
+# wilconxon test
+
+    output$wilcoxon_input <- renderUI({
+      selectInput("wilcoxon_var", "Seleccionar variable:", as.list(colnames(datasetInput())[sapply(datasetInput(), is.numeric)]))
+    })
+
+    output$o_wil_test <- renderPrint({
+      wilcox.test(datasetInput()[,input$wilcoxon_var], mu = input$dif_median_wil,
+                  alternative = input$tipo_cont_wil,
+                  conf.level = as.numeric(input$int_conf_wil),
+                  conf.int = TRUE)
+    })
+    # Boxplot & Violin plot
+
+
+    output$violin_input <- renderUI({
+      selectInput("violin_var", "Seleccionar variable:", as.list(colnames(datasetInput())[sapply(datasetInput(), is.numeric)]))
+    })
+
+    output$o_boxplot_violin <- renderPlot(
+      ggplot(data = datasetInput(), aes(x = 1, y = get(input$violin_var))) +
+        geom_boxplot(fill = brewer.pal(3,"Set1")[1]) +
+        geom_jitter(alpha = 0.3) +
+        labs(y = '', x = input$violin_var) +
+        theme_tufte() +
+        theme(axis.text.x = element_blank(),
+              axis.ticks.x = element_blank())
+    )
+
+    output$o_violin_violin <- renderPlot(
+      ggplot(data = datasetInput(), aes(x = 1, y = get(input$violin_var))) +
+        geom_violin(fill = brewer.pal(3,"Set1")[1]) +
+        geom_jitter(alpha = 0.3) +
+        labs(y = '', x = input$violin_var) +
+        theme_tufte() +
+        theme(axis.text.x = element_blank(),
+              axis.ticks.x = element_blank())
+    )
+
+    # Distribución fija
+
+    output$dist_input <- renderUI({
+      selectInput("dist_var", "Seleccionar variable:", as.list(colnames(datasetInput())[sapply(datasetInput(), is.numeric)]))
+    })
+
+
+    output$o_hist_dist <- renderPlot(
+      ggplot(data = datasetInput(), aes(get(input$dist_var))) +
+        geom_histogram(fill = brewer.pal(3,"Set1")[1], bins = 20, colors = 'black') +
+        geom_rug() +
+        labs(y = 'Frecuencia absoluta', x = input$violin_var) +
+        theme_tufte()
+    )
+
+    output$o_qqplot_dist <- renderPlot(
+      ggplot(data = datasetInput(), aes(sample = get(input$dist_var))) +
+        stat_qq() + stat_qq_line() +
+        labs(y = 'Muestra', x = 'Teórica') +
+        theme_tufte()
+    )
+
+  # Retardo y secuencial
+    output$lsp_input <- renderUI({
+      selectInput("lsp_var", "Seleccionar variable:", as.list(colnames(datasetInput())[sapply(datasetInput(), is.numeric)]))
+    })
+
+    output$o_retardos_lsp <- renderPlot(
+      ggplot(data = data.frame(x = head(datasetInput()[,input$lsp_var],-1),
+                               y = tail(datasetInput()[,input$lsp_var],-1)),
+             aes(x = x, y = y)) +
+        geom_point() + geom_rangeframe() +
+        labs(x = paste0(input$lsp_var,'[1:',length(datasetInput()[,input$lsp_var]) - 1,']'),
+             y = paste0(input$lsp_var,'[2:',length(datasetInput()[,input$lsp_var]),']')) +
+        theme_tufte()
+    )
+
+    output$o_secuencial_lsp <- renderPlot(
+      ggplot(data = datasetInput(), aes(x = 1:length(datasetInput()[,input$lsp_var]),
+                                        y = get(input$lsp_var))) +
+        geom_line() + geom_rangeframe() +
+        labs(x = 'Retardo',
+             y = input$lsp_var) +
+        theme_tufte()
+    )
+
+# Bondad del ajuste
+
+
+    output$tba_input <- renderUI({
+      selectInput("tba_var", "Seleccionar variable:", as.list(colnames(datasetInput())[sapply(datasetInput(), is.numeric)]))
+    })
+
+    output$o_momentos_tba <- renderPrint(
+      MASS::fitdistr(datasetInput()[, input$tba_var], input$i_curva_tba)
+
+    )
+
+    llf <- function(param)
+    {mu <- param[1]
+    sigma <- param[2]
+    llValue <- dnorm(datasetInput()[, input$tba_var], mean = mu, sd = sigma, log = TRUE)
+    return(sum(llValue))}
+
+
+
+    output$o_max_ver_tba <- renderPrint(
+      summary(maxLik::maxLik( llf, start = c(mu = 0, sigma = 1)))
+      )
+
+    output$o_ks_tba <- renderPrint(
+      ks.test(datasetInput()[, input$tba_var], 'pnorm', 5.68, 3.89)
+    )
+
+    output$o_bondad_tba <- renderPlot({
+      g <- datasetInput()[, input$tba_var]
+      h <- hist(g, freq = FALSE)
+      xfit <- seq(min(g), max(g), length = 40)
+      yfit <- dnorm(xfit, mean = mean(g), sd = sd(g))
+      # yfit <- yfit * diff(h$mids[1:2]) * length(g)
+
+      lines(xfit, yfit, col = "black", lwd = 1.5)}
+    )
+
+    output$nnbiv_input1 <- renderUI({
+      selectInput("nnbiv_var1", "Seleccionar primera variable:", as.list(colnames(datasetInput())[sapply(datasetInput(), is.numeric)]))
+    })
+
+    output$nnbiv_input2 <- renderUI({
+      selectInput("nnbiv_var2", "Seleccionar segunda variable:", as.list(colnames(datasetInput())[sapply(datasetInput(), is.numeric) &
+                                                                                                    names(datasetInput()) != input$nnbiv_var1]))
+    })
+
+    output$o_bihist_bi <- renderPlot({
+      out <- Hmisc::histbackback(datasetInput()[, input$nnbiv_var1], datasetInput()[, input$nnbiv_var2],
+                          xlab = c(input$nnbiv_var1, input$nnbiv_var2), probability = TRUE)
+
+      barplot(-out$left, col = brewer.pal(3,"Set1")[1], horiz = TRUE, space = 0, add = TRUE, axes = FALSE)
+      barplot(out$right, col = brewer.pal(3,"Set1")[2], horiz = TRUE, space = 0, add = TRUE, axes = FALSE)
+      }
      )
-   })
 
-   output$errboxplot <- renderPlotly({
+    output$o_sp_bi <- renderPlot({
+      ggplot(data = datasetInput(), aes(x = datasetInput()[,input$nnbiv_var1],
+                                        y = datasetInput()[,input$nnbiv_var2])) +
+        geom_point() +
+        geom_smooth(method = 'lm', se = FALSE ) +
+        geom_rangeframe() +
+        labs(x = input$nnbiv_var1, y = input$nnbiv_var2) +
+        theme_tufte()
+    })
 
-     datab <- reactive({data.frame(y = lmfit()$residuals)})
-     #ggplot(data = datab(), aes(x = '', y = y)) +
-    #   geom_boxplot(fill = "#4271AE", colour = "#1F3552", alpha = 0.7) +
-    #   scale_y_continuous(name = "residuals")
-     print(
-     plot_ly(data = datab()) %>%
-       add_trace(name = 'boxplot', y = ~y, x = 1, type = "box", boxpoints = "none") %>%
-       add_trace(name = 'residuos', type = "scatter", mode = "markers",
-                 y = ~y, x = rnorm(nrow(datab()),1,0.05), marker = list(color = ~y, size = 10),
-                 hoverinfo = 'none') %>%
-       layout(xaxis = list(tickmode = "array", tickvals = c(1), ticktext = c("Residuos") ))
-     )
-   })
+    output$o_sp_coef_bi <- renderPrint(
+      cor(datasetInput()[,input$nnbiv_var1], datasetInput()[,input$nnbiv_var2])
+    )
+
+    output$o_rl_bi <- renderPrint(
+      summary(lm(datasetInput()[,input$nnbiv_var2] ~ datasetInput()[,input$nnbiv_var1],
+                 data = datasetInput()))
+    )
 
 
-   output$errqqplot <- renderPlotly({
+    diagPlot <- function(model){
+      p1 <- ggplot(model, aes(.fitted, .resid)) + geom_point()
+      p1 <- p1 + stat_smooth(method = "loess") + geom_hline(yintercept = 0, col = "red", linetype = "dashed")
+      p1 <- p1 + xlab("Fitted values") + ylab("Residuals")
+      p1 <- p1 + ggtitle("Residual vs Fitted Plot") + theme_bw()
 
-     qq <- reactive({qqnorm(lmfit()$residuals, plot.it = FALSE)})
-     datab <- reactive({data.frame(x = qq()$x, y = qq()$y)})
-     datos.cuartiles <- quantile(lmfit()$residuals,c(0.25,0.75))
-     norm.cuartiles <- qnorm(c(0.25, 0.75))
-     b <- (datos.cuartiles[2] - datos.cuartiles[1])/(norm.cuartiles[2] - norm.cuartiles[1])
-     a <- datos.cuartiles[1] - norm.cuartiles[1]*b
-     #ggplot(data = datab(), aes(sample = y)) +
-    #   stat_qq() +
-     #  stat_qq_line()
-     print(
-       datab() %>%
-         plot_ly(name = 'qqnorm', y = ~y, x = ~x, mode = 'marker')) %>%
-       add_markers(y = ~y) %>%
-       add_trace(name = 'qqline', x = ~x, y = ~x*b + a, mode = 'lines', name = 'Ajuste') %>%
-       layout(xaxis = list(title = 'teórica'), yaxis = list(title = 'muestra') )
-   })
-}
+      # p2<-ggplot(model, aes(qqnorm(.stdresid)[[1]], .stdresid))+geom_point(na.rm = TRUE)
+      # p2<-p2+geom_abline(aes(qqline(.stdresid)))+xlab("Theoretical Quantiles")+ylab("Standardized Residuals")
+      # p2<-p2+ggtitle("Normal Q-Q")+theme_bw()
 
-# Run the application
-shinyApp(ui = ui, server = server)
+      p2 <- ggplot(model, aes( sample = .stdresid)) + stat_qq() + stat_qq_line()
+      p2 <- p2 + xlab("Theoretical Quantiles") + ylab("Standardized Residuals")
+      p2 <- p2 + ggtitle("Normal Q-Q") + theme_bw()
+
+      p3<-ggplot(model, aes(.fitted, sqrt(abs(.stdresid))))+geom_point(na.rm=TRUE)
+      p3<-p3+stat_smooth(method="loess", na.rm = TRUE)+xlab("Fitted Value")
+      p3<-p3+ylab(expression(sqrt("|Standardized residuals|")))
+      p3<-p3+ggtitle("Scale-Location")+theme_bw()
+
+      p4<-ggplot(model, aes(seq_along(.cooksd), .cooksd))+geom_bar(stat="identity", position="identity")
+      p4<-p4+xlab("Obs. Number")+ylab("Cook's distance")
+      p4<-p4+ggtitle("Cook's distance")+theme_bw()
+
+      p5<-ggplot(model, aes(.hat, .stdresid))+geom_point(aes(size=.cooksd), na.rm=TRUE)
+      p5<-p5+stat_smooth(method="loess", na.rm=TRUE)
+      p5<-p5+xlab("Leverage")+ylab("Standardized Residuals")
+      p5<-p5+ggtitle("Residual vs Leverage Plot")
+      p5<-p5+scale_size_continuous("Cook's Distance", range=c(1,5))
+      p5<-p5+theme_bw()+theme(legend.position="bottom")
+
+      p6<-ggplot(model, aes(.hat, .cooksd))+geom_point(na.rm=TRUE)+stat_smooth(method="loess", na.rm=TRUE)
+      p6<-p6+xlab("Leverage hii")+ylab("Cook's Distance")
+      p6<-p6+ggtitle("Cook's dist vs Leverage hii/(1-hii)")
+      p6<-p6+geom_abline(slope=seq(0,3,0.5), color="gray", linetype="dashed")
+      p6<-p6+theme_bw()
+
+      return(list(rvfPlot=p1, qqPlot=p2, sclLocPlot=p3, cdPlot=p4, rvlevPlot=p5, cvlPlot=p6))
+    }
+
+    output$o_rl_plot_bi <- renderPlot({
+      diagPlts <- diagPlot(lm(datasetInput()[,input$nnbiv_var2] ~ datasetInput()[,input$nnbiv_var1],
+                      data = datasetInput()))
+      do.call(grid.arrange, c(diagPlts, top = "Diagnostic Plots", ncol = 3))
+    })
+
+    output$o_ftest_vartst <- renderPrint({
+      var.test(datasetInput()[,input$nnbiv_var1], datasetInput()[,input$nnbiv_var2],
+               alternate = input$tipo_cont_vartst, conf.level = as.numeric(input$int_conf_vartst))
+    })
+
+
+    output$o_plot_tst_bi <- renderPlot({
+      boxplot(datasetInput()[,input$nnbiv_var1], datasetInput()[,input$nnbiv_var2],
+              names = c(input$nnbiv_var1, input$nnbiv_var2),
+              col = c(brewer.pal(3,"Set1")[1], brewer.pal(3,"Set1")[2]))
+      points(c(mean(datasetInput()[,input$nnbiv_var1]),mean(datasetInput()[,input$nnbiv_var2])),
+             col = 'black', pch = 18, cex = 1.5)
+    })
+
+    output$o_tst_bi <- renderPrint({
+      t.test(datasetInput()[,input$nnbiv_var1], datasetInput()[,input$nnbiv_var2],
+               alternate = input$tipo_cont_tst_bi, conf.level = as.numeric(input$int_conf_tst_bi),
+             var.equal = input$variance_tst_bi, paired = input$paired_tst_bi, mu = input$mean_dif_tst_bi)
+    })
+
+    output$o_plot_wil_bi <- renderPlot({
+      boxplot(datasetInput()[,input$nnbiv_var1], datasetInput()[,input$nnbiv_var2],
+              names = c(input$nnbiv_var1, input$nnbiv_var2),
+              col = c(brewer.pal(3,"Set1")[1], brewer.pal(3,"Set1")[2]))
+
+    })
+
+    output$o_wil_bi <- renderPrint({
+      wilcox.test(datasetInput()[,input$nnbiv_var1], datasetInput()[,input$nnbiv_var2],
+                  alternative = input$tipo_cont_wil_bi, conf.level = as.numeric(input$int_conf_wil_bi),
+                  paired = input$paired_wil_bi, mu = input$mean_dif_wil_bi, conf.int = TRUE)
+    })
+
+    output$cn_input1 <- renderUI({
+      selectInput("cn_var1", "Seleccionar variable categórica:", as.list(colnames(datasetInput())[sapply(datasetInput(), is.factor)]))
+    })
+
+    output$cn_input2 <- renderUI({
+      selectInput("cn_var2", "Seleccionar variable numérica:", as.list(colnames(datasetInput())[sapply(datasetInput(), is.numeric)]))
+    })
+
+    b_col <- reactive({
+      if (length(levels(datasetInput()[,input$cn_var1])) <= 2)
+        brewer.pal(3, "Set1")[1:length(levels(datasetInput()[,input$cn_var1]))]
+      else
+        brewer.pal(length(levels(datasetInput()[,input$cn_var1])), "Set1")
+    })
+
+    output$o_boxplot_cn <- renderPlot({
+      boxplot(datasetInput()[, input$cn_var2] ~ datasetInput()[, input$cn_var1],
+              col = b_col())
+              })
+
+
+
+      output$o_density_cn <- renderPlot({
+        ggplot(data = datasetInput(), aes_string(x = input$cn_var2,
+                                          fill = input$cn_var1)) +
+          geom_density(alpha = 0.7) +
+          scale_fill_brewer(type = 'qual', palette = 6) +
+          geom_rangeframe() +
+          labs(x = input$cn_var2, y = 'densidad') +
+          theme_tufte() +
+          theme(legend.position = 'bottom')
+      })
+
+
+      output$o_rl_cn <- renderPrint({
+        summary(lm(datasetInput()[, input$cn_var2] ~ datasetInput()[, input$cn_var1],
+                   data = datasetInput()))
+      })
+
+
+
+      diagPlot4 <- function(model){
+        p1 <- ggplot(model, aes(.fitted, .resid)) + geom_point()
+        p1 <- p1 + stat_smooth(method = "loess") + geom_hline(yintercept = 0, col = "red", linetype = "dashed")
+        p1 <- p1 + xlab("Fitted values") + ylab("Residuals")
+        p1 <- p1 + ggtitle("Residual vs Fitted Plot") + theme_bw()
+
+        # p2<-ggplot(model, aes(qqnorm(.stdresid)[[1]], .stdresid))+geom_point(na.rm = TRUE)
+        # p2<-p2+geom_abline(aes(qqline(.stdresid)))+xlab("Theoretical Quantiles")+ylab("Standardized Residuals")
+        # p2<-p2+ggtitle("Normal Q-Q")+theme_bw()
+
+        p2 <- ggplot(model, aes( sample = .stdresid)) + stat_qq() + stat_qq_line()
+        p2 <- p2 + xlab("Theoretical Quantiles") + ylab("Standardized Residuals")
+        p2 <- p2 + ggtitle("Normal Q-Q") + theme_bw()
+
+        p3<-ggplot(model, aes(.fitted, sqrt(abs(.stdresid))))+geom_point(na.rm=TRUE)
+        p3<-p3+stat_smooth(method="loess", na.rm = TRUE)+xlab("Fitted Value")
+        p3<-p3+ylab(expression(sqrt("|Standardized residuals|")))
+        p3<-p3+ggtitle("Scale-Location")+theme_bw()
+
+
+        p5<-ggplot(model, aes(.hat, .stdresid))+geom_point(aes(size=.cooksd), na.rm=TRUE)
+        p5<-p5+stat_smooth(method="loess", na.rm=TRUE)
+        p5<-p5+xlab("Leverage")+ylab("Standardized Residuals")
+        p5<-p5+ggtitle("Residual vs Leverage Plot")
+        p5<-p5+scale_size_continuous("Cook's Distance", range=c(1,5))
+        p5<-p5+theme_bw()+theme(legend.position="bottom")
+
+
+        return(list(rvfPlot=p1, qqPlot=p2, sclLocPlot=p3,  rvlevPlot=p5 ))
+      }
+
+      output$o_rl_plot_cn <- renderPlot({
+        diagPlts <- diagPlot4(lm(datasetInput()[,input$cn_var2] ~ datasetInput()[,input$cn_var1],
+                                data = datasetInput()))
+        do.call(grid.arrange, c(diagPlts, top = "Diagnostic Plots", ncol = 2))
+      })
+
+
+
+      output$o_anova_cn <- renderPrint({
+        summary(aov(datasetInput()[,input$cn_var2] ~ datasetInput()[,input$cn_var1],
+                    data = datasetInput()))
+      })
+
+      output$o_anova_tukey_cn <- renderPrint({
+        a1 <- aov(datasetInput()[,input$cn_var2] ~ datasetInput()[,input$cn_var1])
+        TukeyHSD(x = a1, conf.level = 0.95)
+      })
+
+      output$o_krustal_cn <- renderPrint({
+        kruskal.test(datasetInput()[,input$cn_var2] ~ datasetInput()[,input$cn_var1],
+                     data = datasetInput())
+      })
+
+
+
+
+
+      output$cc_input1 <- renderUI({
+        selectInput("cc_var1", "Seleccionar primera variable:", as.list(colnames(datasetInput())[sapply(datasetInput(), is.factor)]))
+      })
+
+      output$cc_input2 <- renderUI({
+        selectInput("cc_var2", "Seleccionar segunda variable:", as.list(colnames(datasetInput())[sapply(datasetInput(), is.factor) &
+                                                                                                      names(datasetInput()) != input$cc_var1]))
+      })
+
+      output$o_tab_cruzada_bi <- renderUI({
+        custom_table <- sjPlot::sjt.xtab(datasetInput()[, input$cc_var1], datasetInput()[, input$cc_var2],
+                                         var.labels = c(input$cc_var1,input$cc_var2),
+
+                 show.summary = F,
+                 show.cell.prc	= T,
+
+                 show.row.prc	= T,
+
+                 show.col.prc = T,
+
+                 show.na = F,
+                 wrap.labels = 50,
+                 #tdcol.col = "#00688B",
+
+                 #emph.total = T,
+                 #emph.color = "#3aaee5",
+                 use.viewer = T#,
+                 #CSS = list(css.table = "border: 1px solid;",
+                #            css.tdata = "border: 1px solid;")
+                )
+
+        HTML(custom_table$knitr)
+
+      })
+
+      output$o_barplot_cc_bi <- renderPlot({
+        datasetInput() %>%
+          group_by_(input$cc_var1, input$cc_var2) %>%
+          summarise(counts = n()) %>%
+        ggplot(aes_string(x = input$cc_var1, y = quo(counts),
+                          color = input$cc_var2, fill = input$cc_var2)) +
+          geom_bar(
+
+            stat = "identity", position = position_dodge(0.8),
+            width = 0.7
+          ) +
+          scale_color_brewer(type = 'qual', palette = 6) +
+          scale_fill_brewer(type = 'qual', palette = 6) +
+          geom_text(
+            aes_string(label = quo(counts), group = input$cc_var2),
+            position = position_dodge(0.8),
+            vjust = -0.3, size = 3.5) +
+
+          theme_tufte() +
+          geom_rangeframe(color = 'black')
+      })
+
+
+      cont_table <- reactive({
+        table(datasetInput()[, input$cc_var1], datasetInput()[, input$cc_var2])
+        })
+
+      chisq <- reactive({
+        chisq.test(cont_table())
+        })
+
+      output$o_x2_cc_bi <- renderPrint({
+        chisq()
+      })
+
+      output$o_x2_xp_cc_bi <- renderPrint({
+        round(chisq()$expected,2)
+      })
+
+      output$o_x2_res_cc_bi <- renderPrint({
+        round(chisq()$residuals, 3)
+      })
+
+      output$o_x2_std_cc_bi <- renderPrint({
+        round(chisq()$stdres, 3)
+      })
+
+      output$o_fisher_c_bi <- renderPrint({
+        fisher.test(cont_table())
+      })
+
+
+
+      output$mreg_input1 <- renderUI({
+        selectInput("mreg_var1", "Seleccionar variable dependiente:", as.list(colnames(datasetInput())[sapply(datasetInput(), is.numeric)]))
+      })
+
+      output$mreg_input2 <- renderUI({
+        selectInput("mreg_var2", "Seleccionar regresores:", as.list(colnames(datasetInput())[names(datasetInput()) != input$mreg_var1]),
+                    multiple = TRUE, selected = colnames(datasetInput())[names(datasetInput()) != input$mreg_var1])
+      })
+
+      fm <- reactive({
+        paste(input$mreg_var1, '~', paste(input$mreg_var2,collapse = '+'))
+      })
+      mlr <- reactive({
+        lm(as.formula(fm()), data = datasetInput())
+      })
+
+      output$o_mreg <- renderPrint({
+        summary(mlr())
+      })
+
+      output$o_mreg_hip <- renderPlot({
+        diagPlts <- diagPlot4(mlr())
+        do.call(grid.arrange, c(diagPlts,  ncol = 2))
+      })
+
+      output$o_mreg_int_conf  <- renderPrint({
+        confint(mlr)
+      })
+
+
+
+
+    })
+
+
+
+
 
