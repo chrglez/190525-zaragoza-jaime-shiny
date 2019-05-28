@@ -1,0 +1,12 @@
+name: PINE
+title: PINE
+username:
+account: aramaki2501
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 926258
+bundleId: 2110158
+url: https://aramaki2501.shinyapps.io/PINE/
+when: 1558915126.11817
+asMultiple: FALSE
+asStatic: FALSE

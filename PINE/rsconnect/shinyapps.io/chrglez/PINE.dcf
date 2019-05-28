@@ -1,0 +1,12 @@
+name: PINE
+title: PINE
+username:
+account: chrglez
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 950005
+bundleId: 2111139
+url: https://chrglez.shinyapps.io/PINE/
+when: 1558959388.40685
+asMultiple: FALSE
+asStatic: FALSE
